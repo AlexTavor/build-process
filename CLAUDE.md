@@ -1,9 +1,9 @@
-# build-process
+# mlmd
 
-A process for building software with a coding agent (Claude Code). It is for developers who know
-how to build software and have not built much with an agent: it leaves out the engineering they
-already know and covers what changes when an agent writes the code. The readers are experienced
-developers, not juniors.
+A process for building software with a coding agent (Claude Code), and mlmd, the Claude Code plugin
+that will run it. It is for developers who know how to build software and have not built much with
+an agent: it leaves out the engineering they already know and covers what changes when an agent
+writes the code. The readers are experienced developers, not juniors.
 
 - `process.md`: the process, phases 0 to 8: sessions, documents, the plan, trust, git, tools,
   requirements, architecture, spikes, and the build through release.

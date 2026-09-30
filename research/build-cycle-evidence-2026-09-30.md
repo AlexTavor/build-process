@@ -93,3 +93,38 @@ observability of the process, and git handling.
   - The always-on daemon is a launchd agent, so macOS only. dod's runtime is standard-library
     Python run through uv. The README says a kit "also serves its spec standalone, so the dashboard
     works opened directly". Nothing was tested outside macOS.
+- **Claude Code's EnterWorktree tool** (its tool description, read 2026-09-30):
+  - With `name`, it creates a worktree under `.claude/worktrees/` on a new branch, based on
+    origin's default branch unless `worktree.baseRef` is `head`.
+  - With `path`, it moves the session into an existing worktree. On the first entry from the
+    launch directory, the worktree only has to appear in `git worktree list`, so one made beside
+    the repository qualifies. When the session is already in a worktree, a switch must target one
+    under `.claude/worktrees/`. Whether a session can move from one worktree beside the repository
+    to another, for example after `/clear`, is untested.
+  - ExitWorktree does not remove a worktree that was entered by `path`.
+  - The tool is used only when the user or CLAUDE.md asks for worktrees.
+- **Installing what a plugin needs.** Sources: https://code.claude.com/docs/en/hooks.md and
+  https://code.claude.com/docs/en/plugins-reference.md, read 2026-09-30.
+  - No hook event fires when a plugin is installed, enabled or updated. `Setup` fires only with
+    `--init-only`, or with `--init` or `--maintenance` in `-p` mode.
+  - The hooks page gives the pattern: "check for the dependency on first use and install on miss",
+    for example a hook that tests for `${CLAUDE_PLUGIN_DATA}/node_modules`.
+  - `${CLAUDE_PLUGIN_DATA}` is `~/.claude/plugins/data/<id>/`. It is kept across plugin updates and
+    deleted on uninstall.
+  - Files in a plugin's `bin/` are on the Bash tool's PATH while the plugin is enabled.
+  - Command hooks time out after 600 seconds by default. `async: true` runs a hook in the
+    background, and `asyncRewake: true` wakes Claude when the hook exits with code 2.
+  - SessionStart fires on `startup`, `resume`, `clear`, `compact` and `fork`. Its `systemMessage` is
+    shown to the user, while `additionalContext` and plain stdout go to Claude's context.
+- **What dod needs to run.** From `dod/pyproject.toml` and its git tree: Python 3.10 or later
+  (`requires-python = ">=3.10"`), no runtime dependencies ("stdlib-only by design"), and a web UI
+  that is committed already built (`src/dod/web/*.js`). This Mac's `/usr/bin/python3` is 3.9.6, too
+  old for dod.
+- **The WorktreeCreate hook.** Source: https://code.claude.com/docs/en/hooks.md, read 2026-09-30.
+  - It fires when a worktree is created via `--worktree`, a subagent with `isolation: "worktree"`,
+    or a background session, and "replaces default git behavior".
+  - Its input includes `name`, `cwd`, `base_ref` and `isolation`. Its stdout must contain only the
+    created worktree's path, and any non-zero exit fails the creation.
+  - WorktreeRemove fires at session exit, when a subagent finishes, and when a background session
+    is deleted.
+  - The page doesn't say whether the desktop app's own worktree sessions trigger the hook.

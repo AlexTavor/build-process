@@ -18,6 +18,36 @@ For developers who know how to build software and have not built much with an ag
 - **Fresh session:** a session that did not write the work it is given, started from the documents.
 - **The gates:** the checks that run before main moves.
 
+## Using mlmd
+
+mlmd is the Claude Code plugin that runs this process. Parts of it are still to be built (see
+Tooling this process needs).
+
+- **Install, once per machine:** `/plugin marketplace add AlexTavor/mlmd`, then
+  `/plugin install mlmd@mlmd`. The first session after that installs, in the background, what mlmd
+  needs: uv if it's missing, and dod, pinned to a version, into the plugin's data folder. mlmd
+  installs nothing that needs admin rights or runs at login. For those it shows you the command.
+- **Start, once per project:** in an empty folder, `/mlmd:start`. It sets up the repository, the
+  documents, the plan, CLAUDE.md with every trust box checked, the permission rules and the hooks,
+  adds the project to dod, and begins the Vision interview.
+- **The loop:** every session opens with a status line: what's done, what's ready, what waits for
+  you, and the plan view's address. Then either:
+  - start a new worktree session: the desktop app's worktree option, or `claude --worktree`. mlmd
+    gives it the next ready item, the session names the item, and you say go; or
+  - in a session in the project folder, `/clear`, then `/mlmd:next`.
+
+  For parallel work, start another session. Each one takes a different ready item.
+- **Other commands:** `/mlmd:status` shows the plan in the chat. `/mlmd:trust` shows and changes the
+  trust boxes, editing CLAUDE.md and the permission rules together. `/mlmd:release` tags and
+  deploys a release.
+- **What you do:** answer interviews, decide what comes to you as a question, use what an item or a
+  batch names for you to try, approve the stops your trust level keeps, and give each MVP its
+  verdict.
+- **What you don't do:** write status, keep track of the phase, make branches or worktrees, run
+  merges, or remember to run reviews.
+- **Learning as you go:** the first time a step runs in a project, the session says in one line why
+  the step exists.
+
 ## 0. Sessions
 
 Each phase runs in its own session, and so does each spike and each work item. A session ends by
@@ -232,12 +262,15 @@ events are git events.
 **The plan view.** dod draws the plan as a dependency graph. It lists the items ready to start, the
 critical path and how many items can run at once. It reads the plan and the status from main in
 git, so it is right after every merge without anyone updating it.
-- **Setup, in 1a:** add the repository to dod.
-- **Every session:** a SessionStart hook makes sure the plan view is running and prints its
-  address. In the Claude desktop app, the session opens it in the browser pane. A session that
-  finishes something (a merge, a stop reached) names the items that changed.
-- **On macOS** dod runs as an always-on background agent. Elsewhere, run the plan view by itself:
-  dod's README says a view "works opened directly". This hasn't been tried outside macOS.
+- **Setup, in 1a:** `/mlmd:start` adds the repository to dod. mlmd installs dod itself (see Using
+  mlmd).
+- **Every session:** a SessionStart hook makes sure the plan view is running and shows you a status
+  line before you type anything: done, ready, waiting for you, and the view's address. In the
+  Claude desktop app, the session opens the view in the browser pane. A session that finishes
+  something (a merge, a stop reached) names the items that changed.
+- **dod's always-on background agent** (macOS only) isn't needed. The hook starts the plan view
+  when a session starts, and the view keeps running after the session ends. This hasn't been tried
+  outside macOS.
 
 ## Trust
 
@@ -279,13 +312,20 @@ make an irreversible mistake cheaper.
   (`git switch --detach main`). While any checkout holds main, `git push . HEAD:main` is refused.
   Items that don't depend on each other run in parallel sessions, and the plan view shows which are
   ready.
-- **The worktree script** makes an item's worktree:
-  - cut from main, after checking that local main isn't behind origin;
-  - beside the repository, not inside it. Tools that walk the repository pick up a worktree nested
-    in it: robotics-lms had to exclude the desktop app's `.claude/worktrees/` from its lint and
-    its mutation runs;
-  - with dependencies installed and the git-ignored files the project needs to run (environment
-    files) copied in. Without them the gates fail, and the failure reads as a problem in the code.
+- **mlmd's WorktreeCreate hook makes every worktree.** Claude Code calls it whenever a session
+  starts in a new worktree (`claude --worktree`, a background session, and, still to be checked,
+  the desktop app's worktree option), and it replaces Claude Code's own creation. It:
+  - claims the next ready item. Creating the item's branch is the claim, since git refuses a
+    second branch with the same name;
+  - bases the branch on local main, not on origin. When the push box is checked, local main runs
+    ahead of origin between pushes, and a branch cut from origin would miss the latest merges;
+  - installs dependencies and copies in the git-ignored files the project needs to run
+    (environment files). Without them the gates fail, and the failure reads as a problem in the
+    code;
+  - places the worktree beside the repository, not inside it. Tools that walk the repository pick
+    up a worktree nested in it: robotics-lms had to exclude the desktop app's `.claude/worktrees/`
+    from its lint and its mutation runs. If the desktop app's features need their worktrees under
+    `.claude/worktrees/`, they go there instead, and phase 2 writes each tool's exclusion.
 - **Names:** the branch is the item's id and a short name (`w7-catalog`), and the merge commit
   names it too. The plan view reads both.
 - **Merging.** The merge script does these steps:
@@ -314,14 +354,15 @@ to open that practice 10 times. There are three kinds:
 - **Checks, in a fresh session:** workflows. design-review for each design document, and the
   adversarial review before merge. Whatever judges the agent's work runs outside the session that
   made it.
-- **Enforcement:** hooks and scripts. The gates in the pre-push hook, the refusal of
-  `--no-verify`, the plan view at session start, and the permission rules for the trust level.
+- **Enforcement and setup:** hooks and scripts. The gates in the pre-push hook, the refusal of
+  `--no-verify`, the WorktreeCreate hook, the status line and plan view at session start, the
+  first-session install, and the permission rules for the trust level.
 
 design-review's kinds, per document: the Vision, and each MVP's PRD with its behaviors, use `prd`
 (`gdd` for a game). architecture.md and a batch HLD use `hld`. An LLD uses `lld`.
 
-They ship as one Claude Code plugin: skills, workflows (in the plugin's `workflows/` folder, run as
-`/<plugin>:<workflow>`), hooks and templates. engineering-discipline's skills are not part of it:
+They ship as one Claude Code plugin, mlmd: skills, workflows (in the plugin's `workflows/` folder,
+run as `/mlmd:<workflow>`), hooks and templates. engineering-discipline's skills are not part of it:
 their practices are already in the documents, the review questions and the gates.
 
 ## Ambiguity levels
@@ -347,8 +388,10 @@ Phase 1 covers the whole product first (1a), then one MVP (1b). Each later MVP s
   - `.pdd/plan.json`, with the phases up to 3 as its first items, and `.pdd/constitution.md`. The
     repository is added to dod;
   - CLAUDE.md, with every trust box checked, and the permission rules that go with them;
-  - the plugin, the worktree script and the merge script. The pre-push hook starts with the plan's
-    structure check, and phase 4 adds the rest of the gates.
+  - the pre-push hook, starting with the plan's structure check. Phase 4 adds the rest of the
+    gates.
+
+  `/mlmd:start` does all of this.
 - **Ask:** "Interview me about the whole product until you can write vision.md. Ask numbered
   questions, a few per round. Mark every decision you write with who made it and when: me, or you
   so work could continue. Add each term to the glossary as it comes up. Anything not decided goes
@@ -445,7 +488,7 @@ behaviors.md, and keeps possible the later features the Vision lists for it.
   - the high-fragility assumptions, which are phase 3's input;
   - rules for the module boundaries the architecture depends on, each with its tier;
   - glossary entries for the architecture's parts;
-  - the worktree script, now installing the stack's dependencies.
+  - the project's install command, which the WorktreeCreate hook runs in every new worktree.
 
 ## 3. Spikes
 
@@ -585,11 +628,19 @@ Parts of this process rely on tools that don't exist yet:
   - the plan read from main instead of from a checkout;
   - your items shown as waiting for you;
   - adding a project in one step. Today a project is added by hand to dod's PDD provider config.
-- **The plugin:**
+- **mlmd, the plugin:**
+  - commands: `/mlmd:start`, `/mlmd:next`, `/mlmd:status`, `/mlmd:trust`, `/mlmd:release`;
   - skills: the interview, the LLD template, the merge procedure, handoff;
   - workflows: design-review and adversarial review, which exist today as copies installed from
     the author's workflows repository;
-  - hooks: the plan view at session start, the refusal of `--no-verify`;
+  - hooks: the first-session install, the status line and plan view at session start,
+    WorktreeCreate, the refusal of `--no-verify`;
   - templates for the documents.
-- **Scripts:** the worktree script, the merge script, the plan's structure check, and the pre-push
-  hook that runs the gates.
+- **Scripts:** the merge script, the plan's structure check, and the pre-push hook that runs the
+  gates.
+- **Spikes, once for mlmd, and again when Claude Code changes:**
+  - whether the desktop app's worktree option calls the WorktreeCreate hook;
+  - whether the app's diff, base-branch sync and archive still work with a worktree the hook made,
+    and where the worktree has to live for that;
+  - whether `/mlmd:next` in a session in the project folder can move the session into a new item's
+    worktree, including after `/clear`.
