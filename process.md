@@ -289,9 +289,17 @@ one stop left: your word that a piece of work is good, after which the agent mer
 deploys it.
 
 How each box is enforced:
-- **Merge, push and release:** permission rules in `.claude/settings.json`. A checked box is an
-  `ask` rule for the command that does it (the merge script, `git push origin`, the release
-  script), so Claude Code itself asks you. An unchecked box is an `allow` rule.
+- **Merge, push and release:** a PreToolUse hook in the project's `.claude/settings.json` reads
+  every command before it runs, and knows which boxes are checked. For a checked box, it makes
+  Claude Code ask you before any command that merges, pushes or releases, however the command is
+  written. When it can't read a command, it asks. For an unchecked box, it lets those commands
+  through. Ask rules for the same commands (`Bash(git push:*)` and the scripts) stay as a second
+  layer. Rules alone aren't enough: a rule matches only commands that start with its text, and in
+  the spike a plain `git push` and `git push -u origin` ran with no question
+  (`docs/spikes/trust-enforcement.md`). Bypass mode doesn't skip these questions.
+- **What the hook can't see:** it reads the command's text, so a push run from inside another
+  script gets past it. The boxes stop the agent's mistakes, not an agent that hides what it
+  runs.
 - **Batch end:** one of your items at the end of each batch, which the next batch's first items
   depend on. The plan view shows it as waiting for you.
 - **LLD:** the session stops after the LLD's review and waits for your word, which the LLD
@@ -318,7 +326,9 @@ make an irreversible mistake cheaper.
   - claims the next ready item. Creating the item's branch is the claim, since git refuses a
     second branch with the same name;
   - bases the branch on local main, not on origin. When the push box is checked, local main runs
-    ahead of origin between pushes, and a branch cut from origin would miss the latest merges;
+    ahead of origin between pushes, and a branch cut from origin would miss the latest merges.
+    The hook's input carries no base branch, whatever the hooks documentation lists, so the hook
+    chooses main itself;
   - installs dependencies and copies in the git-ignored files the project needs to run
     (environment files). Without them the gates fail, and the failure reads as a problem in the
     code;
@@ -326,6 +336,12 @@ make an irreversible mistake cheaper.
     up a worktree nested in it: robotics-lms had to exclude the desktop app's `.claude/worktrees/`
     from its lint and its mutation runs. If the desktop app's features need their worktrees under
     `.claude/worktrees/`, they go there instead, and phase 2 writes each tool's exclusion.
+- **Moving to the next item.** In a session that already worked on an item, `/mlmd:next` leaves
+  that worktree (ExitWorktree, keeping it), then enters the next item's worktree by its name,
+  which goes through the WorktreeCreate hook. The hook creates the worktree, or prints the path of
+  the one that already exists. This works after `/clear` and asks nothing. Entering by path
+  doesn't work: a move from one worktree beside the repository to another is refused, and on
+  Claude Code 2.1.284 entering by path asks you every time (`docs/spikes/worktree-switching.md`).
 - **Names:** the branch is the item's id and a short name (`w7-catalog`), and the merge commit
   names it too. The plan view reads both.
 - **Merging.** The merge script does these steps:
@@ -356,7 +372,7 @@ to open that practice 10 times. There are three kinds:
   made it.
 - **Enforcement and setup:** hooks and scripts. The gates in the pre-push hook, the refusal of
   `--no-verify`, the WorktreeCreate hook, the status line and plan view at session start, the
-  first-session install, and the permission rules for the trust level.
+  first-session install, and the trust hook with its permission rules.
 
 design-review's kinds, per document: the Vision, and each MVP's PRD with its behaviors, use `prd`
 (`gdd` for a game). architecture.md and a batch HLD use `hld`. An LLD uses `lld`.
@@ -387,7 +403,8 @@ Phase 1 covers the whole product first (1a), then one MVP (1b). Each later MVP s
     shares all three;
   - `.pdd/plan.json`, with the phases up to 3 as its first items, and `.pdd/constitution.md`. The
     repository is added to dod;
-  - CLAUDE.md, with every trust box checked, and the permission rules that go with them;
+  - CLAUDE.md, with every trust box checked, and the trust hook and permission rules that go
+    with them;
   - the pre-push hook, starting with the plan's structure check. Phase 4 adds the rest of the
     gates.
 
@@ -634,17 +651,18 @@ Parts of this process rely on tools that don't exist yet:
   - workflows: design-review and adversarial review, which exist today as copies installed from
     the author's workflows repository;
   - hooks: the first-session install, the status line and plan view at session start,
-    WorktreeCreate, the refusal of `--no-verify`;
+    WorktreeCreate, the trust hook, the refusal of `--no-verify`;
   - templates for the documents.
 - **Scripts:** the merge script, the plan's structure check, and the pre-push hook that runs the
   gates.
-- **Spikes, once for mlmd, and again when Claude Code changes:**
-  - whether the trust boxes' permission rules stop the merge, push and release commands in every
-    permission mode (default, accept edits, auto, bypass), including when a command is written
-    another way (`git -C . push origin`, a plain `git push`, the script called another way). If
-    they don't, a PreToolUse hook that reads each command enforces the boxes instead;
-  - whether the desktop app's worktree option calls the WorktreeCreate hook;
-  - whether the app's diff, base-branch sync and archive still work with a worktree the hook made,
-    and where the worktree has to live for that;
-  - whether `/mlmd:next` in a session in the project folder can move the session into a new item's
-    worktree, including after `/clear`.
+- **Spikes, once for mlmd, and again when Claude Code changes.** Each has its document in
+  `docs/spikes/`:
+  - **trust enforcement, done:** ask rules alone miss most ways of writing a command, and a
+    PreToolUse hook holds in every mode (see Trust). Auto mode with the real model is still to
+    run;
+  - **worktree switching, done:** ExitWorktree, then EnterWorktree by name through the
+    WorktreeCreate hook (see Git). `/clear` typed by hand is still to check;
+  - **the desktop app's worktree checkbox, in progress:** the app calls the WorktreeCreate hook,
+    but the hook's process couldn't reach a repository in `~/Documents`. Still open: whether it
+    works outside `~/Documents`, and whether the app's diff, base-branch sync and archive work with
+    a worktree the hook made.
