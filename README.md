@@ -136,6 +136,8 @@ remembering each review.
 
 - [process.md](process.md): the process in full.
 - [research/](research/): the evidence it's drawn from.
+- [docs/](docs/): how mlmd itself is being built: its assumptions, its spikes and their results,
+  and the traps found on the way.
 - [UNHANDLED_ISSUES.md](UNHANDLED_ISSUES.md): known issues not yet handled.
 
 ## Where it comes from

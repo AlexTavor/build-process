@@ -1,0 +1,22 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git:*)",
+      "Bash(/usr/bin/git:*)",
+      "Bash(cd:*)",
+      "Bash(bash:*)",
+      "Bash(sh:*)",
+      "Bash(./scripts/merge.sh:*)"
+    ]
+  },
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          { "type": "command", "command": "sh \"$CLAUDE_PROJECT_DIR/.claude/trust-hook.sh\"" }
+        ]
+      }
+    ]
+  }
+}
