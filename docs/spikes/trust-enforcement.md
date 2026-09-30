@@ -51,7 +51,7 @@ Changes to the method:
   does all 30 runs (3 variants, 5 modes, 2 versions) in about 90 seconds, and `table.py <dir>`
   prints the tables below.
 - **Trust.** 2.1.284 printed `Ignoring 6 permissions.allow entries from .claude/settings.json:
-  this workspace has not been trusted.` A project the owner works in is trusted. So `spike.py`
+  this workspace has not been trusted.` A project the operator works in is trusted. So `spike.py`
   gives each run a throwaway `CLAUDE_CONFIG_DIR` whose `.claude.json` marks `toy` as trusted.
   `--untrusted` leaves the mark out.
 - **Allow rules.** In default, acceptEdits and dontAsk mode, a command that no allow rule matches
@@ -174,12 +174,12 @@ What mlmd should use:
 
 Still open:
 
-- Whether the question shows on screen, in the CLI and in the desktop app. The owner's steps are
+- Whether the question shows on screen, in the CLI and in the desktop app. The operator's steps are
   below.
 - Auto mode with the real model, for the three "not tested" cells. After `claude update` and
   `claude auth login`, run `SPIKE_DIR=/tmp/trust-real sh docs/spikes/trust-enforcement/run.sh
   rules auto` from the mlmd repository. `check.sh` prints each command and its result. `run.sh`
-  uses the owner's real config, where the toy folder is not trusted. If the updated CLI ignores
+  uses the operator's real config, where the toy folder is not trusted. If the updated CLI ignores
   untrusted allow rules as 2.1.284 does, all eight forms the rules miss go to the classifier.
 
 **Manual check of the question.** Run from the mlmd repository. The toy's settings allow every

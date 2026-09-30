@@ -18,7 +18,7 @@ Background outside this repository. Read it before re-deriving any of it:
 
 ## Rules
 
-- The owner decides the process. A change to `process.md` that the owner has not agreed to is
+- The operator decides the process. A change to `process.md` that the operator has not agreed to is
   raised as a proposal in chat, not made as an edit.
 - A claim about how a project ran names its source: a file, a commit or a transcript.
 - Research ends as a file in `research/`. The chat reply only points to it.

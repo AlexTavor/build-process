@@ -48,7 +48,7 @@ instructions.
 app runs its CLI with the same input format: `ps` showed the app's CLI running with
 `--input-format stream-json --permission-prompt-tool stdio --permission-mode auto`. With
 `--approve`, `spike.py` passes `--permission-prompt-tool stdio` and answers yes to every
-permission question, as the owner would in the app. Without it, `-p` refuses whatever asks.
+permission question, as the operator would in the app. Without it, `-p` refuses whatever asks.
 
 **Added sequences.** f uses worktrees made with `git worktree add` under `toy/.claude/worktrees/`.
 g is the `/clear` case. h adds a PreToolUse hook that returns allow for EnterWorktree
@@ -74,7 +74,7 @@ its branch. `<toy>` is the repository and `<wt>` is `toy-worktrees`.
 Other observations:
 
 - On 2.1.284, sequence a in bypassPermissions mode asked nothing: w1-a entered, w2-b refused as
-  in a. In auto mode the question still went to the owner, and the fake API received no
+  in a. In auto mode the question still went to the operator, and the fake API received no
   classifier request.
 - The WorktreeCreate hook's input had `session_id`, `transcript_path`, `cwd`, `hook_event_name`
   and `name`, and 2.1.284 adds `prompt_id`. There was no `base_ref` and no `isolation`, for
@@ -93,7 +93,7 @@ app's own `/clear` and the terminal's `/clear` behave the same was not checked. 
 are below.
 
 The two ways in differ on 2.1.284, the version the desktop app runs. EnterWorktree with a path
-outside `.claude/worktrees/` asks the owner on every entry. An allow rule for EnterWorktree does
+outside `.claude/worktrees/` asks the operator on every entry. An allow rule for EnterWorktree does
 not stop the question, and neither does a PreToolUse hook that returns allow (h). Of the modes
 tried (acceptEdits, auto, bypassPermissions), only bypassPermissions skipped it. **EnterWorktree
 with a name goes through the project's WorktreeCreate hook** (d, i, on both versions), as
@@ -111,7 +111,7 @@ What it means for mlmd:
 - In a session that is not in a worktree, ExitWorktree changes nothing and returns
   `No-op: there is no active EnterWorktree session to exit.` (seen on 2.1.284). So `/mlmd:next`
   can call it every time.
-- EnterWorktree with a path also works after ExitWorktree, but on 2.1.284 the owner answers a
+- EnterWorktree with a path also works after ExitWorktree, but on 2.1.284 the operator answers a
   question on every move.
 - If worktrees ever move under `.claude/worktrees/`, a direct switch by path works there, with no
   question and no ExitWorktree (f).
@@ -123,8 +123,8 @@ What it means for mlmd:
 
 Still open:
 
-- `/clear` typed in an interactive session. The owner's steps are below.
-- A run with the real model. After the owner logs in again (`claude auth login`), run
+- `/clear` typed in an interactive session. The operator's steps are below.
+- A run with the real model. After the operator logs in again (`claude auth login`), run
   `spike.py <sequence> <dir> --real`.
 
 **Manual check of `/clear`.** Run from the mlmd repository.

@@ -10,6 +10,8 @@ For developers who know how to build software and have not built much with an ag
 
 ## Words
 
+- **Operator:** the person running the process with the agent. They answer, decide, use what's
+  built and approve the stops. This document calls them \"you\".
 - **Phase:** a step of this process, 1a to 8.
 - **MVP:** one increment of the product, with its own PRD and verdict. Each MVP runs phases 1b to 8.
 - **Batch:** a group of work items in an MVP's plan, with a goal and exit criteria.
@@ -231,7 +233,7 @@ vocabulary, so dod can draw it:
   enough to compare items.
 - **`delivers`** names the behaviors an item delivers. Every behavior of the current MVP is
   delivered by some item.
-- **Your items** carry `"owner": true`: an MVP's verdict, and the stops the trust level asks for.
+- **Your items** carry `"operator": true`: an MVP's verdict, and the stops the trust level asks for.
 - **One final item.** Exactly one item has nothing depending on it: the current MVP's verdict. The
   next MVP's first items depend on it.
 - **Plan edits reach main in merges of their own.** Work branches never edit plan.json. A plan

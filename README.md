@@ -69,6 +69,16 @@ The first session after that installs what mlmd needs, in the background:
 [uv](https://docs.astral.sh/uv/) if it's missing, and [dod](https://github.com/AlexTavor/dod),
 which draws the plan. It installs nothing that needs admin rights or runs at login.
 
+**Or ask Claude to install it.** Tell Claude Code: "Install the mlmd plugin: run
+`claude plugin marketplace add AlexTavor/mlmd`, then `claude plugin install mlmd@mlmd`." These are
+ordinary shell commands, so Claude runs them with its Bash tool and asks before each one. When it's
+done, type `/reload-plugins`, or start a new session: a new plugin loads there. The same two
+commands work in a setup script, without a session.
+
+To give everyone on a project mlmd, install it with `--scope project`. That records it in the
+project's `.claude/settings.json`, so Claude Code tells whoever opens the project that it's needed.
+Each person still installs it once.
+
 **Start a project:** in an empty folder, run `/mlmd:start`. It sets up the repository, the
 documents, the plan, the trust settings and the hooks, then starts the interview about your
 product.
