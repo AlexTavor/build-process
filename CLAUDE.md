@@ -5,8 +5,8 @@ how to build software and have not built much with an agent: it leaves out the e
 already know and covers what changes when an agent writes the code. The readers are experienced
 developers, not juniors.
 
-- `process.md`: the process. So far phases 0 to 3: sessions, documents, requirements,
-  architecture, spikes.
+- `process.md`: the process, phases 0 to 8: sessions, documents, the plan, trust, git, tools,
+  requirements, architecture, spikes, and the build through release.
 - `research/`: the evidence behind it, one dated file per piece of research.
 - `UNHANDLED_ISSUES.md`: issues found outside the current task.
 

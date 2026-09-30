@@ -1,20 +1,35 @@
-# Building software with a coding agent: requirements to spikes
+# Building software with a coding agent
 
 *Draft, 2026-09-29, revised 2026-09-30. Replaces the Superpowers plan
-(`~/PersonalKB/drafts/superpowers-layer-plan.md`). Covers the start of the process only:
-requirements, architecture, spikes. The document forms follow robotics-lms
-(`research/robotics-lms-process-2026-09-30.md`). The Vision and the PRD per MVP follow RUP's
-Vision and iteration plans.*
+(`~/PersonalKB/drafts/superpowers-layer-plan.md`). Covers requirements through release. The
+document forms follow robotics-lms (`research/robotics-lms-process-2026-09-30.md`). The Vision and
+the PRD per MVP follow RUP's Vision and iteration plans. The evidence for the build phases is in
+`research/build-cycle-evidence-2026-09-30.md`.*
 
 For developers who know how to build software and have not built much with an agent.
 
+## Words
+
+- **Phase:** a step of this process, 1a to 8.
+- **MVP:** one increment of the product, with its own PRD and verdict. Each MVP runs phases 1b to 8.
+- **Batch:** a group of work items in an MVP's plan, with a goal and exit criteria.
+- **Work item:** one unit of work in the plan, done on its own branch.
+- **Your items:** plan items only you can close: an MVP's verdict, a stop the trust level asks for.
+- **Fresh session:** a session that did not write the work it is given, started from the documents.
+- **The gates:** the checks that run before main moves.
+
 ## 0. Sessions
 
-Each phase runs in its own session, and so does each spike. A session ends by writing its output
-files. The next session starts by reading only those files, not the previous conversation.
+Each phase runs in its own session, and so does each spike and each work item. A session ends by
+writing its output files. The next session starts by reading only those files, not the previous
+conversation.
 
-Start a new session when the phase changes, or when a spike or a review finishes. Don't carry one
-conversation across phases: whatever it holds that isn't in a file is lost to every later session.
+Start a new session when the phase changes, or when a spike, a work item or a review finishes.
+Don't carry one conversation across phases: whatever it holds that isn't in a file is lost to every
+later session.
+
+A session works in the worktree of the item it is on (see Git), and starts with the plan view open
+(see The plan).
 
 ## Documents
 
@@ -82,6 +97,7 @@ other file is loaded unless something asks for it. It holds:
 - **Claims:** nothing is stated as fact unless it was read or run in the current session. A name,
   a file name or a search hit is a lead, not a fact. The agent reports what it guessed as
   confidently as what it checked, and this rule is what makes it check;
+- the **Trust** section (see Trust);
 - three imports, each on its own line: `@docs/rules.md`, `@docs/glossary.md`, `@docs/footguns.md`.
 
 An import pulls its file into every session, so rules and terms apply without anyone remembering
@@ -141,7 +157,7 @@ hold decisions only. Each question has:
 - its **level** (see Ambiguity levels);
 - its **state**. **Proposed:** a default exists, and work proceeds on it until you rule.
   **Deferred:** a decision not to decide yet, with the trigger that reopens it;
-- **needed by:** the MVP or the work that can't go further without an answer.
+- **needed by:** the MVP or the work item that can't go further without an answer.
 
 A settled question moves into the document it belongs in, and is deleted here.
 
@@ -152,6 +168,161 @@ merge without conflicts.
 
 How an issue differs from a footgun: an issue gets fixed and then it's gone. A footgun stays,
 because its cause can't be removed (it's in a dependency or the domain) or isn't worth removing.
+
+**`.pdd/plan.json`** and **`.pdd/constitution.md`**: the plan and its rules (see The plan).
+
+## The plan
+
+**`.pdd/plan.json`** is the project's one plan, from the first session to the last. It uses PDD's
+vocabulary, so dod can draw it:
+
+```json
+{
+  "title": "…",
+  "batches": [
+    {"id": "1-2", "name": "…", "goal": "…", "exit_criteria": "…"}
+  ],
+  "tracks": ["DATA", "UI"],
+  "items": [
+    {"id": "W7", "title": "…", "batch": "1-2", "track": "DATA", "depends_on": ["W5"],
+     "size": "M", "risk": "low", "delivers": ["B3", "B4"], "note": "…"}
+  ]
+}
+```
+
+- **Batches** are numbered by their MVP: `1-2` is MVP 1's second batch. The first batch of each MVP
+  holds its requirement and architecture phases (1b to 3, and 1a for MVP 1), so progress shows
+  from the first session.
+- **Items** are numbered W1, W2 across the project. An id is never reused: a cut item's number
+  stays unused.
+- **`depends_on`** means "cannot correctly start until", not the order the plan happens to list
+  things in. Leave out a dependency that another one already implies.
+- **Sizes** are S, M, L or XL, never times. The agent's time estimates have no basis, and sizes are
+  enough to compare items.
+- **`delivers`** names the behaviors an item delivers. Every behavior of the current MVP is
+  delivered by some item.
+- **Your items** carry `"owner": true`: an MVP's verdict, and the stops the trust level asks for.
+- **One final item.** Exactly one item has nothing depending on it: the current MVP's verdict. The
+  next MVP's first items depend on it.
+- **Plan edits reach main in merges of their own.** Work branches never edit plan.json. A plan
+  changed on a branch shows only on that branch: robotics-lms and unshatter both ended up keeping a
+  second copy of the plan in step by hand.
+
+**Status comes from git.** Nobody writes it, except for one case:
+- **done:** a merge commit on main names the item;
+- **in progress:** a branch named for the item exists;
+- **waiting for you:** one of your items whose dependencies are all done;
+- **blocked:** the one status written by hand, in the item's `status`, with a note saying what it
+  waits for;
+- **pending:** everything else.
+
+Hand-kept status went stale in tiny twice. robotics-lms moved status at two events only, the LLD
+written and the merge, and still needed a copy ritual between main and its worktrees. Both of its
+events are git events.
+
+**`.pdd/constitution.md`** holds these rules. dod also uses the file to recognize the project.
+
+**A structure check runs with the gates:**
+- no cycles;
+- no dependency on an item that doesn't exist;
+- exactly one final item;
+- every behavior of the current MVP delivered by an item;
+- an LLD for every build item that has started.
+
+**The plan view.** dod draws the plan as a dependency graph. It lists the items ready to start, the
+critical path and how many items can run at once. It reads the plan and the status from main in
+git, so it is right after every merge without anyone updating it.
+- **Setup, in 1a:** add the repository to dod.
+- **Every session:** a SessionStart hook makes sure the plan view is running and prints its
+  address. In the Claude desktop app, the session opens it in the browser pane. A session that
+  finishes something (a merge, a stop reached) names the items that changed.
+- **On macOS** dod runs as an always-on background agent. Elsewhere, run the plan view by itself:
+  dod's README says a view "works opened directly". This hasn't been tried outside macOS.
+
+## Trust
+
+The project's CLAUDE.md has a **Trust** section with five boxes. A checked box is a stop that waits
+for you:
+
+- [ ] **LLD:** you accept an item's LLD before its code is written.
+- [ ] **Batch end:** you use a finished batch before the next one starts.
+- [ ] **Merge:** an item merges into main on your word.
+- [ ] **Push:** main is pushed to origin on your word.
+- [ ] **Release:** a release is tagged and deployed on your word.
+
+The more boxes are checked, the less the agent is trusted. A new project starts with every box
+checked. Uncheck a box when its stops have stopped finding anything. At the far end, unshatter has
+one stop left: your word that a piece of work is good, after which the agent merges, pushes and
+deploys it.
+
+How each box is enforced:
+- **Merge, push and release:** permission rules in `.claude/settings.json`. A checked box is an
+  `ask` rule for the command that does it (the merge script, `git push origin`, the release
+  script), so Claude Code itself asks you. An unchecked box is an `allow` rule.
+- **Batch end:** one of your items at the end of each batch, which the next batch's first items
+  depend on. The plan view shows it as waiting for you.
+- **LLD:** the session stops after the LLD's review and waits for your word, which the LLD
+  records. Nothing mechanical enforces this box.
+
+**A stop whatever the boxes say:** any irreversible operation on real data, such as a migration
+against production data, deleting stored data, or changing who can access what. The script that
+does it asks for typed confirmation, not a keypress: one cutover script read a closed input as a
+yes. The boxes trade review for speed on work that can be undone. Trusting the agent more doesn't
+make an irreversible mistake cheaper.
+
+## Git
+
+- **One repository per project** (1a).
+- **Branches and worktrees from phase 1 on.** All work happens on a branch, in a worktree of its
+  own, with one session per worktree. No session checks out main. The folder the repository was
+  created in doesn't stay on main either: after the first commit, detach it
+  (`git switch --detach main`). While any checkout holds main, `git push . HEAD:main` is refused.
+  Items that don't depend on each other run in parallel sessions, and the plan view shows which are
+  ready.
+- **The worktree script** makes an item's worktree:
+  - cut from main, after checking that local main isn't behind origin;
+  - beside the repository, not inside it. Tools that walk the repository pick up a worktree nested
+    in it: robotics-lms had to exclude the desktop app's `.claude/worktrees/` from its lint and
+    its mutation runs;
+  - with dependencies installed and the git-ignored files the project needs to run (environment
+    files) copied in. Without them the gates fail, and the failure reads as a problem in the code.
+- **Names:** the branch is the item's id and a short name (`w7-catalog`), and the merge commit
+  names it too. The plan view reads both.
+- **Merging.** The merge script does these steps:
+  1. In the item's worktree, build the merge on a detached HEAD at main:
+     `git switch --detach main && git -c rerere.enabled=true merge --no-ff <branch>`. Resolve any
+     conflicts there. rerere records each resolution, so a retry replays it.
+  2. Run the gates on the merged tree.
+  3. Move main with `git push . HEAD:main`. Git allows only a fast-forward, so if main moved in the
+     meantime, go back to step 1 on the new main.
+  4. Switch back to the branch. Remove the worktree once the item is done.
+- **The gates** run in one pre-push hook, whenever the push targets `refs/heads/main`: types, lint,
+  tests, the Gherkin scenarios, the plan's structure check, and the project's gated rules.
+  `git push . HEAD:main` runs the pre-push hook too, so one hook covers local merges and pushes to
+  origin. That includes a merge committed by hand after a conflict, which a merge hook once
+  skipped 5 times in 8. A Claude Code PreToolUse hook refuses `--no-verify`.
+- **Releases are tags on main.** Main is not the deployed tree: a deploy comes from a tag. That is
+  what lets merges go ahead without you while releases still wait (see Trust).
+
+## Tools
+
+Each step names the one thing to run, and invokes it by name. Nothing depends on a skill starting
+from its description: in one project's records, 1,472 reminders to apply a practice led the agent
+to open that practice 10 times. There are three kinds:
+- **Guidance, in the working session:** skills and templates. The interview, the LLD template, the
+  merge procedure, handoff.
+- **Checks, in a fresh session:** workflows. design-review for each design document, and the
+  adversarial review before merge. Whatever judges the agent's work runs outside the session that
+  made it.
+- **Enforcement:** hooks and scripts. The gates in the pre-push hook, the refusal of
+  `--no-verify`, the plan view at session start, and the permission rules for the trust level.
+
+design-review's kinds, per document: the Vision, and each MVP's PRD with its behaviors, use `prd`
+(`gdd` for a game). architecture.md and a batch HLD use `hld`. An LLD uses `lld`.
+
+They ship as one Claude Code plugin: skills, workflows (in the plugin's `workflows/` folder, run as
+`/<plugin>:<workflow>`), hooks and templates. engineering-discipline's skills are not part of it:
+their practices are already in the documents, the review questions and the gates.
 
 ## Ambiguity levels
 
@@ -168,10 +339,16 @@ Phase 1 covers the whole product first (1a), then one MVP (1b). Each later MVP s
 
 ### 1a. The whole product
 
-- **Project:** before anything is written, create a folder and a git repository for this project
-  and nothing else. Every document and all the code live there, and the project's sessions start
-  there. Claude Code keeps CLAUDE.md, its memory and its session history per folder, so a project
-  that shares a folder with other work shares all three.
+- **Project:** before anything is written:
+  - a folder and a git repository for this project and nothing else. Every document and all the
+    code live there, and the project's sessions start there. Claude Code keeps CLAUDE.md, its
+    memory and its session history per folder, so a project that shares a folder with other work
+    shares all three;
+  - `.pdd/plan.json`, with the phases up to 3 as its first items, and `.pdd/constitution.md`. The
+    repository is added to dod;
+  - CLAUDE.md, with every trust box checked, and the permission rules that go with them;
+  - the plugin, the worktree script and the merge script. The pre-push hook starts with the plan's
+    structure check, and phase 4 adds the rest of the gates.
 - **Ask:** "Interview me about the whole product until you can write vision.md. Ask numbered
   questions, a few per round. Mark every decision you write with who made it and when: me, or you
   so work could continue. Add each term to the glossary as it comes up. Anything not decided goes
@@ -186,7 +363,7 @@ Phase 1 covers the whole product first (1a), then one MVP (1b). Each later MVP s
   built, how it was judged, the verdict, and where what was built can still be found (a commit or
   a link). A decision that follows from a prototype cites it. The code is thrown away. Say so when
   asking for it; otherwise the agent will reuse it as a base.
-- **Review:** a fresh session reviews the Vision, looking for:
+- **Review:** design-review of the Vision, in a fresh session, looking for:
   - a feature marked with no MVP, and not marked "none yet" either;
   - a term used with two meanings, or two terms for one thing;
   - a belief the product depends on that nobody chose. Each one goes into assumptions.md;
@@ -199,7 +376,8 @@ Phase 1 covers the whole product first (1a), then one MVP (1b). Each later MVP s
     architecture must keep possible;
   - every decision is marked with who made it;
   - the review's findings are settled.
-- **Outputs:** the project's repository, vision.md, and the standing documents.
+- **Outputs:** the project's repository, the plan shown in dod, vision.md, and the standing
+  documents.
 
 ### 1b. An MVP
 
@@ -209,7 +387,8 @@ Phase 1 covers the whole product first (1a), then one MVP (1b). Each later MVP s
   smallest set of features that shows what this MVP is for. Everything else stays in the Vision
   for a later MVP.
 - A cheapest prototype (see 1a) can answer a large question here too.
-- **Review:** a fresh session reviews the PRD and the behaviors it adds or changes, looking for:
+- **Review:** design-review of the PRD and the behaviors it adds or changes, in a fresh session,
+  looking for:
   - a behavior without its Failure or Edges line;
   - a term used with two meanings, or two terms for one thing;
   - a belief the design depends on that nobody chose. Each one goes into assumptions.md;
@@ -258,13 +437,15 @@ behaviors.md, and keeps possible the later features the Vision lists for it.
   steps to the system. Watch for steps that assert nothing: if a scenario's steps only log or
   return, it passes against any implementation. A fresh session checks them by asking "which wrong
   implementation passes these?"
+- **Review:** design-review of architecture.md, kind `hld`, in a fresh session.
 - **Outputs:**
   - `docs/architecture.md`: the parts, the key flows, the decisions (each marked with who made it
     and when), and a **Deferred** section for technical options set aside;
   - `docs/stack.md`;
   - the high-fragility assumptions, which are phase 3's input;
   - rules for the module boundaries the architecture depends on, each with its tier;
-  - glossary entries for the architecture's parts.
+  - glossary entries for the architecture's parts;
+  - the worktree script, now installing the stack's dependencies.
 
 ## 3. Spikes
 
@@ -285,12 +466,130 @@ per spike, doing the minimum needed to answer its question.
 - **A likely spike:** can the Gherkin steps drive this stack? This is hard for real-time systems and
   games, where state is continuous and timing matters.
 
+## 4. Plan the build
+
+After phase 3 for MVP 1, and after the phase 2 check for a later MVP.
+
+- **Ask:** "Plan MVP N's build in .pdd/plan.json: work items in batches, each with what it cannot
+  correctly start until, its size, its risk and the behaviors it delivers. Give each batch a goal
+  and exit criteria that can be checked. End with the MVP's verdict as the one final item."
+- **Size items for review:** an item is small enough when its LLD can be reviewed in one sitting.
+  A file that will obviously grow past a few hundred lines is a reason to split the item now, not
+  after the code exists.
+- **Your items:** the MVP's verdict, and a stop at the end of each batch while that trust box is
+  checked.
+- **The gates:** before the first build item, the pre-push hook runs types, lint, tests, the Gherkin
+  scenarios, the plan's structure check and the gated rules. Try each check once on the real
+  failure it exists for. A check counts once it has been seen to fail on a real case, not only on a
+  planted example: in one project a boundary check passed a module that broke its rule, until a
+  review noticed.
+- **You:** read the plan in dod: the batches, what each item delivers, what can run in parallel.
+- **Done when:** every behavior of the MVP is delivered by an item, the structure check passes, and
+  each gate has been seen to fail on a real case.
+
+## 5. Batch design
+
+Only for a batch that adds or changes architecture: new parts, new stored data, new flows between
+parts. Any other batch goes straight to its items, whose LLDs are written against
+architecture.md.
+
+- **Ask for `docs/hld/<batch>.md`:**
+  - what the batch builds and why;
+  - its decisions, each marked with who made it and when;
+  - what can go wrong, with a guard for each;
+  - what it costs;
+  - its key flows;
+  - what the LLDs must decide;
+  - its changes to the glossary, the rules and the assumptions;
+  - what it defers.
+- **Review:** design-review, kind `hld`, in a fresh session. A finding that would overturn one of
+  your decisions comes to you as a question.
+- **Done when:** the review's findings are settled. Where the batch changes the architecture,
+  architecture.md changes in the same commit.
+
+## 6. Work items
+
+Each item runs in its own worktree, in its own session.
+
+1. **LLD**, `docs/lld/W<id>-<name>.md`, from the template:
+   - a header: the behaviors it delivers, what it depends on, what you'll open to see it work, and
+     whether its code gets the adversarial review (step 4), with the reason;
+   - **Files:** every file it adds or changes, with what the file is responsible for and what it
+     exports. A file missing from this table should not appear in the diff;
+   - **Contracts:** the types that cross a module boundary, and what happens to invalid input. It
+     fails or reaches the user, never quietly;
+   - **Tests:** each test file, what it pins, and the behavior and rule ids it covers;
+   - **Not doing:** what a reader would expect here and won't find, and where it happens instead.
+2. **Design review** of every LLD, kind `lld`, in a fresh session. The findings are fixed in the LLD
+   before any code. If the LLD box is checked, the session then waits for your word.
+3. **Implementation**, in the worktree. The gates run between edits, and each verified step is a
+   commit.
+4. **Adversarial review before merge**, in a fresh session. It attacks:
+   - the tests, always: "which wrong implementation passes these?";
+   - the code, when the item reads outside input, writes stored data or changes what stored data
+     means, or does something that can't be undone.
+
+   What it finds is fixed before the merge.
+5. **Merge**, by the merge procedure, as the trust level says. The item is done when its merge is
+   on main.
+
+**Why these reviews:** in one project, reviews by fresh sessions found 11 of its 15 most
+consequential defects, for about 15% of its tokens. Nine of the ten largest code defects they found
+were in those three kinds of code. And agent-written tests can pass without testing anything: one
+set of removal tests passed on code that removed nothing.
+
+## 7. End of a batch
+
+- **You:** use what the batch built. If the batch-end box is checked, the next batch waits for your
+  item. What you find becomes items in the plan.
+- **Mutation testing** on what the batch changed in the modules that hold data or make decisions.
+  A tool (Stryker, for TypeScript) makes small changes to the code and reruns the tests, and a
+  change no test notices is a gap. Read every survivor the same day. Each one is a missing test,
+  dead code, or a change that makes no difference, and each is closed.
+- **A reading pass** for failures that leave no trace: swallowed errors, work started and never
+  finished, success reported for nothing written.
+- **Once no session can read the whole codebase:** a check for duplicated code. The agent writes a
+  new helper where one already exists.
+- **Done when:** the batch's exit criteria are met.
+
+**Why:** a mutation run found a fault in code the current model wrote: an unreadable save was
+marked writable, so one refused read would have written a new save over the player's. A reading
+pass found two hangs that no check could see.
+
+## 8. End of an MVP, and release
+
+- **The verdict:** you use the MVP against what it was for, and against the result its PRD said
+  would be a no. The verdict goes into its PRD and closes the MVP's final item.
+- **Release:** a tag on main, deployed from the tag. If the release box is checked, you first read
+  the code that handles outside input, permissions and stored data. A platform built by prompting
+  alone, with an earlier model, went to production accepting any Google account as admin and
+  running HTML stored in its content. Reading found both.
+- **After release,** what users report becomes items.
+
 ## Each later MVP
 
-1. Write the last MVP's verdict into its PRD, and revise the Vision if the verdict changes the
-   direction.
+1. Revise the Vision if the last MVP's verdict changes the direction.
 2. 1b: the new MVP's PRD, the behaviors it adds or changes, and their scenarios.
 3. 1.5 for its medium questions.
 4. Phase 2 as a check: walk its new and changed behaviors through the architecture. Change the
    architecture only where one can't be walked through, and record the decision.
 5. Phase 3 for its new high-fragility assumptions.
+6. Phases 4 to 8 for its build.
+
+## Tooling this process needs
+
+Parts of this process rely on tools that don't exist yet:
+- **dod:**
+  - `batches` and `batch` as names for its `phases` and `phase`;
+  - status derived from git;
+  - the plan read from main instead of from a checkout;
+  - your items shown as waiting for you;
+  - adding a project in one step. Today a project is added by hand to dod's PDD provider config.
+- **The plugin:**
+  - skills: the interview, the LLD template, the merge procedure, handoff;
+  - workflows: design-review and adversarial review, which exist today as copies installed from
+    the author's workflows repository;
+  - hooks: the plan view at session start, the refusal of `--no-verify`;
+  - templates for the documents.
+- **Scripts:** the worktree script, the merge script, the plan's structure check, and the pre-push
+  hook that runs the gates.
