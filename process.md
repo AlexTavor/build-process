@@ -639,6 +639,10 @@ Parts of this process rely on tools that don't exist yet:
 - **Scripts:** the merge script, the plan's structure check, and the pre-push hook that runs the
   gates.
 - **Spikes, once for mlmd, and again when Claude Code changes:**
+  - whether the trust boxes' permission rules stop the merge, push and release commands in every
+    permission mode (default, accept edits, auto, bypass), including when a command is written
+    another way (`git -C . push origin`, a plain `git push`, the script called another way). If
+    they don't, a PreToolUse hook that reads each command enforces the boxes instead;
   - whether the desktop app's worktree option calls the WorktreeCreate hook;
   - whether the app's diff, base-branch sync and archive still work with a worktree the hook made,
     and where the worktree has to live for that;
