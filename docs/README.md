@@ -7,6 +7,8 @@ and decision is on the record.
 - [assumptions.md](assumptions.md): what mlmd's design depends on that nobody has proved yet.
 - [footguns.md](footguns.md): traps found on the way, where something looks like it does one
   thing and does another.
+- [requirements.md](requirements.md): proposed requirements for the business side and adoption
+  (roles, the decider, change requests, traceability), by Frank. Not yet agreed.
 - [spikes/](spikes/): one document per spike, with the question, what would be a no, where it ran,
   what was done, and the verdict. The scripts each spike ran are in a folder next to its document.
 
